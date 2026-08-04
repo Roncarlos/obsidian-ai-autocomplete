@@ -3,7 +3,6 @@ import { requestUrl } from "obsidian";
 export const OPENROUTER_API_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
-export const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 export const NO_SUGGESTION = "NO_SUGGESTION";
 
@@ -45,9 +44,6 @@ export interface CompletionRequestOptions {
   systemPrompt?: string;
   reasoningEffort?: string;
   excludeReasoning?: boolean;
-  providerOnly?: string;
-  providerSort?: string;
-  allowFallbacks?: boolean;
   httpReferer?: string;
   appTitle?: string;
 }
@@ -65,24 +61,6 @@ function normalizeChatCompletionsUrl(baseUrl: string): string {
   if (trimmed.endsWith("/chat/completions")) return trimmed;
   if (trimmed.endsWith("/")) return `${trimmed}chat/completions`;
   return `${trimmed}/chat/completions`;
-}
-
-function getProviderPreferences(options: CompletionRequestOptions) {
-  const provider: Record<string, unknown> = {};
-
-  if (options.providerOnly?.trim()) {
-    provider.only = [options.providerOnly.trim()];
-  }
-
-  if (options.providerSort?.trim()) {
-    provider.sort = options.providerSort.trim();
-  }
-
-  if (options.allowFallbacks === false) {
-    provider.allow_fallbacks = false;
-  }
-
-  return Object.keys(provider).length > 0 ? provider : undefined;
 }
 
 function getReasoningPreferences(options: CompletionRequestOptions) {
@@ -125,7 +103,6 @@ Return only the text to insert at the cursor. Do not repeat text that already ap
       headers["X-OpenRouter-Title"] = options.appTitle.trim();
     }
 
-    const provider = getProviderPreferences(options);
     const reasoning = getReasoningPreferences(options);
 
     const response = await requestUrl({
@@ -138,7 +115,6 @@ Return only the text to insert at the cursor. Do not repeat text that already ap
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
-        ...(provider ? { provider } : {}),
         ...(reasoning ? { reasoning } : {}),
         max_tokens: 150,
         temperature: 0.3,

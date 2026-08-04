@@ -7,7 +7,7 @@ import {
   DEFAULT_SYSTEM_PROMPT,
   fetchCompletion,
   OPENROUTER_API_URL,
-} from "./groq-api";
+} from "./api";
 
 interface AIAutocompleteSettings {
   apiKey: string;
@@ -16,9 +16,6 @@ interface AIAutocompleteSettings {
   systemPrompt: string;
   reasoningEffort: string;
   excludeReasoning: boolean;
-  providerOnly: string;
-  providerSort: string;
-  allowFallbacks: boolean;
   httpReferer: string;
   appTitle: string;
   delay: number;
@@ -32,9 +29,6 @@ const DEFAULT_SETTINGS: AIAutocompleteSettings = {
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   reasoningEffort: "minimal",
   excludeReasoning: true,
-  providerOnly: "groq",
-  providerSort: "throughput",
-  allowFallbacks: false,
   httpReferer: "https://github.com/Leoyishou/obsidian-ai-autocomplete",
   appTitle: "AI Autocomplete",
   delay: 800,
@@ -111,9 +105,6 @@ export default class AIAutocompletePlugin extends Plugin {
       systemPrompt: this.settings.systemPrompt,
       reasoningEffort: this.settings.reasoningEffort,
       excludeReasoning: this.settings.excludeReasoning,
-      providerOnly: this.settings.providerOnly,
-      providerSort: this.settings.providerSort,
-      allowFallbacks: this.settings.allowFallbacks,
       httpReferer: this.settings.httpReferer,
       appTitle: this.settings.appTitle,
     };
@@ -192,17 +183,15 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
 
     const modelOptions: Record<string, string> = {
       "openai/gpt-oss-120b:nitro":
-        "OpenAI GPT OSS 120B via Groq (smartest)",
+        "OpenAI GPT OSS 120B (smartest)",
       "meta-llama/llama-3.3-70b-instruct:nitro":
-        "Llama 3.3 70B via Groq (stable)",
+        "Llama 3.3 70B (stable)",
       "moonshotai/kimi-k2-0905:nitro":
-        "Kimi K2 0905 via Groq (code/long context)",
-      "qwen/qwen3-32b:nitro": "Qwen3 32B via Groq (Chinese/reasoning)",
+        "Kimi K2 0905 (code/long context)",
+      "qwen/qwen3-32b:nitro": "Qwen3 32B (Chinese/reasoning)",
       "meta-llama/llama-3.1-8b-instruct:nitro":
-        "Llama 3.1 8B via Groq (lowest latency)",
-      "openai/gpt-oss-20b:nitro": "OpenAI GPT OSS 20B via Groq (reasoning)",
-      "llama-3.3-70b-versatile": "Groq direct: Llama 3.3 70B",
-      "openai/gpt-oss-120b": "Groq direct: GPT OSS 120B",
+        "Llama 3.1 8B (lowest latency)",
+      "openai/gpt-oss-20b:nitro": "OpenAI GPT OSS 20B (reasoning)",
     };
 
     new Setting(containerEl)
@@ -288,47 +277,6 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
           this.display();
           new Notice("AI autocomplete: prompt reset");
         })
-      );
-
-    new Setting(containerEl)
-      .setName("Provider")
-      .setDesc("Use groq as the only provider")
-      .addText((text) =>
-        text
-          .setPlaceholder("Provider name")
-          .setValue(this.plugin.settings.providerOnly)
-          .onChange(async (value) => {
-            this.plugin.settings.providerOnly = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Provider sort")
-      .setDesc("Throughput prioritizes speed")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("throughput", "Throughput")
-          .addOption("latency", "Latency")
-          .addOption("price", "Price")
-          .addOption("", "Default")
-          .setValue(this.plugin.settings.providerSort)
-          .onChange(async (value) => {
-            this.plugin.settings.providerSort = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Allow fallbacks")
-      .setDesc("Off means only use the selected provider")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.allowFallbacks)
-          .onChange(async (value) => {
-            this.plugin.settings.allowFallbacks = value;
-            await this.plugin.saveSettings();
-          })
       );
 
     new Setting(containerEl)

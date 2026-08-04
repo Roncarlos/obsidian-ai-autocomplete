@@ -72,7 +72,7 @@ class GhostTextWidget extends WidgetType {
 
   toDOM() {
     const span = document.createElement("span");
-    span.className = "groq-copilot-ghost-text";
+    span.className = "ai-autocomplete-ghost-text";
     span.textContent = this.text;
     return span;
   }
@@ -208,7 +208,7 @@ export function createFetchPlugin(fetchFn: FetchFn, delay: number) {
             } catch (e) {
               // Silently ignore aborted requests
               if (e instanceof Error && e.name !== "AbortError") {
-                console.error("Groq Copilot: fetch error", e);
+                console.error("AI autocomplete: fetch error", e);
               }
             }
           })();
