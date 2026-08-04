@@ -9,6 +9,7 @@ Type naturally and get ghost text suggestions that appear inline. Press **Tab** 
 - **Ghost text completion** — transparent suggestions appear at your cursor, like GitHub Copilot
 - **Context-aware** — reads text before and after cursor for coherent continuations
 - **Insight-oriented** — can surface sharper questions, hidden assumptions, analogies, and reframes for personal knowledge notes
+- **Internal-link context** — resolves linked notes, headings, and blocks so suggestions can use their content
 - **Fast** — uses compact requests and low-latency model defaults
 - **Bilingual** — automatically detects and continues in Chinese or English
 - **Lightweight** — 6KB plugin, no dependencies
@@ -40,6 +41,8 @@ Type naturally and get ghost text suggestions that appear inline. Press **Tab** 
 ## How it works
 
 The plugin uses CodeMirror 6 extensions to render transparent "ghost text" at the cursor position. When you pause typing, it sends the surrounding context (up to 2000 chars before + 500 chars after cursor) to the configured API and displays the completion as inline ghost text.
+
+Internal Obsidian links found in that context are resolved automatically. The plugin supports whole notes (`[[Note]]`), headings (`[[Note#Heading]]`), blocks (`[[Note#^block-id]]`), and same-note references (`[[#Heading]]`). Aliases and embeds are also recognized. Standard Markdown web links are ignored. At most 8 unique references, 3000 characters per reference, and 10000 characters in total are added to a request.
 
 ## License
 

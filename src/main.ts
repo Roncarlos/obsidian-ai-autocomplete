@@ -1,6 +1,7 @@
 import { Plugin, PluginSettingTab, App, Setting, Notice } from "obsidian";
 import { Extension } from "@codemirror/state";
 import { inlineSuggestionExtension } from "./ghost-text";
+import { buildObsidianLinkContext } from "./obsidian-links";
 import {
   CompletionError,
   CompletionRequestOptions,
@@ -47,8 +48,27 @@ export default class AIAutocompletePlugin extends Plugin {
       async (prefix, suffix) => {
         if (!this.settings.enabled || !this.settings.apiKey) return null;
         try {
+          const activeFile = this.app.workspace.getActiveFile();
+          let linkedContext = "";
+          if (activeFile) {
+            try {
+              linkedContext = await buildObsidianLinkContext(
+                this.app,
+                activeFile,
+                `${prefix}\n${suffix}`
+              );
+            } catch (error) {
+              console.warn(
+                "AI autocomplete: unable to read internal links",
+                error
+              );
+            }
+          }
           return await fetchCompletion(
-            this.getCompletionOptions(),
+            {
+              ...this.getCompletionOptions(),
+              linkedContext,
+            },
             prefix,
             suffix
           );

@@ -44,6 +44,7 @@ export interface CompletionRequestOptions {
   systemPrompt?: string;
   reasoningEffort?: string;
   excludeReasoning?: boolean;
+  linkedContext?: string;
   httpReferer?: string;
   appTitle?: string;
 }
@@ -78,7 +79,12 @@ export async function fetchCompletion(
   prefix: string,
   suffix: string
 ): Promise<string | null> {
-  const systemPrompt = options.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+  const baseSystemPrompt =
+    options.systemPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+  const linkedContext = options.linkedContext?.trim();
+  const systemPrompt = linkedContext
+    ? `${baseSystemPrompt}\n\n${linkedContext}`
+    : baseSystemPrompt;
   const userMessage = `<before_cursor>
 ${prefix}
 </before_cursor>
