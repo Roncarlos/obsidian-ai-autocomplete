@@ -44,6 +44,8 @@ The plugin uses CodeMirror 6 extensions to render transparent "ghost text" at th
 
 Internal Obsidian links found in that context are resolved automatically. The plugin supports whole notes (`[[Note]]`), headings (`[[Note#Heading]]`), blocks (`[[Note#^block-id]]`), and same-note references (`[[#Heading]]`). Aliases and embeds are also recognized. Standard Markdown web links are ignored. At most 8 unique references, 3000 characters per reference, and 10000 characters in total are added to a request.
 
+Reference-handling rules remain in the system prompt, while linked-note excerpts are sent as user-level reference data. Each excerpt is labeled with its source, scope (`note`, `section`, or `block`), and truncation status so smaller models can apply it more reliably.
+
 ## License
 
 MIT
