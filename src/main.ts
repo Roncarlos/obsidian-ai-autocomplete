@@ -696,63 +696,77 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
   private addModelSetting(containerEl: HTMLElement) {
     const isLMStudio = this.plugin.settings.provider === "lmstudio";
     const currentModel = this.plugin.settings.model;
-    const descriptionParts = [
-      isLMStudio
-        ? "Select an LM Studio model or edit the exact identifier sent to the API"
-        : "Model identifier sent to the API",
-    ];
     const modelError = this.plugin.getModelError();
-    if (modelError) descriptionParts.push(`Error: ${modelError}`);
-
-    const setting = new Setting(containerEl)
-      .setName("Model")
-      .setDesc(descriptionParts.join(". "));
 
     if (isLMStudio) {
-      setting.addDropdown((dropdown) => {
-        const options = this.plugin.getLMStudioModelOptions();
-        if (options.length === 0) {
-          dropdown.addOption("", "No models loaded");
-        } else {
-          for (const option of options) {
-            dropdown.addOption(option.value, option.label);
+      const modelOptions = this.plugin.getLMStudioModelOptions();
+      new Setting(containerEl)
+        .setName("Available models")
+        .setDesc(
+          modelError
+            ? `Error loading models: ${modelError}`
+            : "Choose a model provided by LM Studio"
+        )
+        .addDropdown((dropdown) => {
+          dropdown.selectEl.classList.add("ai-autocomplete-model-select");
+          dropdown.selectEl.title = currentModel;
+
+          if (modelOptions.length === 0) {
+            dropdown.addOption("", "No models loaded");
+          } else {
+            for (const option of modelOptions) {
+              dropdown.addOption(option.value, option.label);
+            }
           }
-        }
-        return dropdown
-          .setValue(currentModel)
-          .onChange(async (value) => {
+
+          return dropdown.setValue(currentModel).onChange(async (value) => {
             if (!value) return;
             await this.plugin.selectModel(value);
             this.display();
           });
-      });
+        });
     }
 
-    setting.addText((text) =>
-      text
-        .setPlaceholder("Enter a model identifier")
-        .setValue(currentModel)
-        .onChange(async (value) => {
-          await this.plugin.updateModel(value);
-        })
-    );
+    new Setting(containerEl)
+      .setName("Model identifier")
+      .setDesc(
+        isLMStudio
+          ? "Exact value sent to the completion API; custom values are supported"
+          : "Model identifier sent to the API"
+      )
+      .addText((text) => {
+        text.inputEl.classList.add("ai-autocomplete-model-input");
+        return text
+          .setPlaceholder("Enter a model identifier")
+          .setValue(currentModel)
+          .onChange(async (value) => {
+            await this.plugin.updateModel(value);
+          });
+      });
 
     if (isLMStudio) {
-      setting.addButton((button) => {
-        button
-          .setButtonText(
-            this.plugin.isLMStudioModelsLoading()
-              ? "Loading…"
-              : this.plugin.hasLMStudioModelCache()
-                ? "Refresh models"
-                : "Load models"
-          )
-          .onClick(() => {
-            void this.plugin.refreshLMStudioModels(true, true);
-          });
-        if (this.plugin.isLMStudioModelsLoading()) button.setDisabled(true);
-        return button;
-      });
+      new Setting(containerEl)
+        .setName("Model list")
+        .setDesc(
+          this.plugin.isLMStudioModelsLoading()
+            ? "Loading models from LM Studio…"
+            : "Load the available models again after changing LM Studio"
+        )
+        .addButton((button) => {
+          button
+            .setButtonText(
+              this.plugin.isLMStudioModelsLoading()
+                ? "Loading…"
+                : this.plugin.hasLMStudioModelCache()
+                  ? "Refresh models"
+                  : "Load models"
+            )
+            .onClick(() => {
+              void this.plugin.refreshLMStudioModels(true, true);
+            });
+          if (this.plugin.isLMStudioModelsLoading()) button.setDisabled(true);
+          return button;
+        });
     }
   }
 }

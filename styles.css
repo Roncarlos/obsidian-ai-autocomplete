@@ -4,3 +4,16 @@
   pointer-events: none;
   color: var(--text-muted);
 }
+
+.ai-autocomplete-model-select {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-autocomplete-model-input {
+  width: min(28rem, 100%);
+  max-width: 100%;
+}
