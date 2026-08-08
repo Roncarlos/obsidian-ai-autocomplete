@@ -6,6 +6,22 @@ export const OPENROUTER_API_URL =
 
 export const NO_SUGGESTION = "NO_SUGGESTION";
 
+export type AIProvider = "openrouter" | "lmstudio";
+export type ReasoningMode =
+  | "auto"
+  | "disabled"
+  | "low"
+  | "medium"
+  | "high";
+
+export interface LMStudioModel {
+  id: string;
+  displayName: string;
+  reasoningAllowedOptions: ReasoningMode[];
+  reasoningDefault?: ReasoningMode;
+  variants: string[];
+}
+
 export const OBSIDIAN_REFERENCE_INSTRUCTIONS = `When an <obsidian_references> block is provided:
 - It contains excerpts resolved from internal Obsidian links near the cursor.
 - Use only references that are relevant to completing the text at the cursor. Ignoring irrelevant references is correct.
@@ -40,7 +56,9 @@ export interface CompletionRequestOptions {
   apiKey: string;
   model: string;
   baseUrl: string;
+  provider?: AIProvider;
   systemPrompt?: string;
+  reasoningMode?: ReasoningMode;
   reasoningEffort?: string;
   excludeReasoning?: boolean;
   linkedContext?: string;
@@ -55,21 +73,194 @@ export class CompletionError extends Error {
   }
 }
 
+export class ModelDiscoveryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ModelDiscoveryError";
+  }
+}
+
 function normalizeChatCompletionsUrl(baseUrl: string): string {
-  const trimmed = baseUrl.trim();
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
   if (!trimmed) return OPENROUTER_API_URL;
   if (trimmed.endsWith("/chat/completions")) return trimmed;
   if (trimmed.endsWith("/")) return `${trimmed}chat/completions`;
   return `${trimmed}/chat/completions`;
 }
 
+export function getLMStudioModelsUrl(baseUrl: string): string {
+  const completionUrl = new URL(normalizeChatCompletionsUrl(baseUrl));
+  const path = completionUrl.pathname.replace(
+    /\/chat\/completions\/?$/,
+    ""
+  );
+
+  let modelsPath: string;
+  if (path.endsWith("/api/v1")) {
+    modelsPath = `${path}/models`;
+  } else if (path.endsWith("/v1")) {
+    modelsPath = `${path.slice(0, -3)}/api/v1/models`;
+  } else {
+    modelsPath = `${path.replace(/\/$/, "")}/api/v1/models`;
+  }
+
+  completionUrl.pathname = modelsPath || "/api/v1/models";
+  completionUrl.search = "";
+  completionUrl.hash = "";
+  return completionUrl.toString();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function readString(
+  record: Record<string, unknown>,
+  ...keys: string[]
+): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function normalizeReasoningMode(value: unknown): ReasoningMode | undefined {
+  if (typeof value !== "string") return undefined;
+
+  switch (value.trim().toLowerCase()) {
+    case "auto":
+    case "on":
+      return "auto";
+    case "disabled":
+    case "none":
+    case "off":
+      return "disabled";
+    case "low":
+      return "low";
+    case "medium":
+      return "medium";
+    case "high":
+      return "high";
+    default:
+      return undefined;
+  }
+}
+
+function normalizeLMStudioModel(value: unknown): LMStudioModel | null {
+  if (!isRecord(value)) return null;
+
+  const type = readString(value, "type");
+  if (type && type.toLowerCase() !== "llm") return null;
+
+  const id = readString(value, "key", "id", "model");
+  if (!id) return null;
+
+  const capabilities = isRecord(value.capabilities)
+    ? value.capabilities
+    : undefined;
+  const reasoning = capabilities && isRecord(capabilities.reasoning)
+    ? capabilities.reasoning
+    : isRecord(value.reasoning)
+      ? value.reasoning
+      : undefined;
+  const allowedOptions = new Set<ReasoningMode>();
+  if (reasoning && Array.isArray(reasoning.allowed_options)) {
+    for (const option of reasoning.allowed_options) {
+      const mode = normalizeReasoningMode(option);
+      if (mode) allowedOptions.add(mode);
+    }
+  }
+
+  const variants = Array.isArray(value.variants)
+    ? value.variants.filter(
+        (variant): variant is string =>
+          typeof variant === "string" && variant.trim().length > 0
+      )
+    : [];
+
+  return {
+    id,
+    displayName: readString(value, "display_name", "name", "label") || id,
+    reasoningAllowedOptions: [...allowedOptions],
+    reasoningDefault: reasoning
+      ? normalizeReasoningMode(reasoning.default)
+      : undefined,
+    variants,
+  };
+}
+
+export async function fetchLMStudioModels(options: {
+  apiKey: string;
+  baseUrl: string;
+}): Promise<LMStudioModel[]> {
+  let url: string;
+  try {
+    url = getLMStudioModelsUrl(options.baseUrl);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "invalid URL";
+    throw new ModelDiscoveryError(`LM Studio model URL is invalid: ${message}`);
+  }
+
+  try {
+    const headers: Record<string, string> = {};
+    if (options.apiKey.trim()) {
+      headers.Authorization = `Bearer ${options.apiKey.trim()}`;
+    }
+
+    const response = await requestUrl({
+      url,
+      method: "GET",
+      headers,
+    });
+    const data: unknown = response.json;
+    if (!isRecord(data) || !Array.isArray(data.models)) {
+      throw new ModelDiscoveryError(
+        "LM Studio returned an invalid model list (missing models)."
+      );
+    }
+
+    const models = data.models
+      .map(normalizeLMStudioModel)
+      .filter((model): model is LMStudioModel => model !== null);
+    if (models.length === 0) {
+      throw new ModelDiscoveryError(
+        "LM Studio returned no language models available for completion."
+      );
+    }
+    return models;
+  } catch (error) {
+    if (error instanceof ModelDiscoveryError) throw error;
+    if (error instanceof Error) {
+      throw new ModelDiscoveryError(`Unable to load LM Studio models: ${error.message}`);
+    }
+    throw new ModelDiscoveryError("Unable to load LM Studio models.");
+  }
+}
+
 function getReasoningPreferences(options: CompletionRequestOptions) {
-  const effort = options.reasoningEffort?.trim();
+  if (options.provider === "lmstudio") {
+    return {
+      reasoning_effort: "none",
+      reasoning_tokens: 0,
+    };
+  }
+
+  const mode = options.reasoningMode;
+  const effort = mode
+    ? mode === "auto"
+      ? undefined
+      : mode === "disabled"
+        ? "none"
+        : mode
+    : options.reasoningEffort?.trim();
   if (!effort) return undefined;
 
   return {
-    effort,
-    exclude: options.excludeReasoning !== false,
+    reasoning: {
+      effort,
+      exclude: options.excludeReasoning !== false,
+    },
   };
 }
 
@@ -96,15 +287,18 @@ Return only the text to insert at the cursor. Do not repeat text that already ap
 
   try {
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${options.apiKey}`,
       "Content-Type": "application/json",
     };
 
-    if (options.httpReferer?.trim()) {
+    if (options.apiKey.trim()) {
+      headers.Authorization = `Bearer ${options.apiKey.trim()}`;
+    }
+
+    if (options.provider !== "lmstudio" && options.httpReferer?.trim()) {
       headers["HTTP-Referer"] = options.httpReferer.trim();
     }
 
-    if (options.appTitle?.trim()) {
+    if (options.provider !== "lmstudio" && options.appTitle?.trim()) {
       headers["X-OpenRouter-Title"] = options.appTitle.trim();
     }
 
@@ -120,19 +314,32 @@ Return only the text to insert at the cursor. Do not repeat text that already ap
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
         ],
-        ...(reasoning ? { reasoning } : {}),
+        ...(reasoning || {}),
         max_tokens: 150,
         temperature: 0.3,
         stop: ["\n\n", "---"],
       }),
     });
 
-    const data = response.json;
-    if (data?.error?.message) {
-      throw new CompletionError(String(data.error.message));
+    const data: unknown = response.json;
+    if (
+      isRecord(data) &&
+      isRecord(data.error) &&
+      typeof data.error.message === "string"
+    ) {
+      throw new CompletionError(data.error.message);
     }
 
-    const text = data?.choices?.[0]?.message?.content?.trim();
+    const choices = isRecord(data) && Array.isArray(data.choices)
+      ? data.choices
+      : [];
+    const firstChoice = isRecord(choices[0]) ? choices[0] : undefined;
+    const message = firstChoice && isRecord(firstChoice.message)
+      ? firstChoice.message
+      : undefined;
+    const text = typeof message?.content === "string"
+      ? message.content.trim()
+      : "";
     if (!text) return null;
     const normalizedText = text.replace(/^["']|["']$/g, "").trim();
     if (!normalizedText || normalizedText.toUpperCase() === NO_SUGGESTION) {

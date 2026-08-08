@@ -30,11 +30,12 @@ Type naturally and get ghost text suggestions that appear inline. Press **Tab** 
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| API base URL | `https://openrouter.ai/api/v1/chat/completions` | Any OpenAI-compatible chat completions endpoint |
-| Model | `openai/gpt-oss-120b:nitro` | Smart default via OpenRouter |
+| Provider | `OpenRouter` | Select OpenRouter or LM Studio |
+| API base URL | `https://openrouter.ai/api/v1/chat/completions` | Any OpenAI-compatible chat completions endpoint; LM Studio model discovery uses `/api/v1/models` |
+| Model | `openai/gpt-oss-120b:nitro` | Model identifier sent to the selected provider; LM Studio offers a discovered list and custom values |
 | System prompt | Built-in heuristic prompt | Editable prompt that controls ghost text style and insight behavior |
-| Reasoning effort | `minimal` | Keeps reasoning models fast enough for inline autocomplete |
-| Hide reasoning | On | Excludes reasoning tokens from suggestion text |
+| Reasoning effort | `disabled` | Stored separately for each model; LM Studio autocomplete always sends `reasoning_effort: "none"` and `reasoning_tokens: 0` |
+| Hide reasoning | On | Controls visibility of returned reasoning fields; it does not disable computation |
 | Trigger delay | 800ms | How long to wait after typing before fetching a suggestion |
 | Enabled | On | Toggle via settings or command palette |
 
@@ -45,6 +46,8 @@ The plugin uses CodeMirror 6 extensions to render transparent "ghost text" at th
 Internal Obsidian links found in that context are resolved automatically. The plugin supports whole notes (`[[Note]]`), headings (`[[Note#Heading]]`), blocks (`[[Note#^block-id]]`), and same-note references (`[[#Heading]]`). Aliases and embeds are also recognized. Standard Markdown web links are ignored. At most 8 unique references, 3000 characters per reference, and 10000 characters in total are added to a request.
 
 Reference-handling rules remain in the system prompt, while linked-note excerpts are sent as user-level reference data. Each excerpt is labeled with its source, scope (`note`, `section`, or `block`), and truncation status so smaller models can apply it more reliably.
+
+When LM Studio is selected, the plugin loads language models from `/api/v1/models` at startup and provides a manual refresh action in settings. The selected model's reasoning capabilities and declared default are shown in the settings. A custom model identifier can always be entered manually.
 
 ## License
 
