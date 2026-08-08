@@ -479,12 +479,17 @@ export default class AIAutocompletePlugin extends Plugin {
     }
 
     try {
+      const testPrefix = "The real value of personal knowledge notes is";
       const result = await fetchCompletion(
         this.getCompletionOptions(),
-        "个人知识笔记的真正价值在于",
+        testPrefix,
         ""
       );
-      new Notice(`AI autocomplete: connected${result ? ` (${result})` : ""}`);
+      new Notice(
+        result
+          ? `AI autocomplete: connected\n\n${testPrefix}\n────────\n${result}`
+          : "AI autocomplete: connected\n\nNo suggestion returned"
+      );
     } catch (e) {
       this.showCompletionError(e, true);
     }
