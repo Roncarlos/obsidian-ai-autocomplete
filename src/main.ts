@@ -41,7 +41,7 @@ const DEFAULT_SETTINGS: AIAutocompleteSettings = {
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   reasoningByModel: {},
   excludeReasoning: true,
-  httpReferer: "https://github.com/Leoyishou/obsidian-ai-autocomplete",
+  httpReferer: "",
   appTitle: "AI Autocomplete",
   delay: 800,
   enabled: true,
@@ -628,31 +628,33 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl)
-      .setName("HTTP referer")
-      .setDesc("Optional app attribution")
-      .addText((text) =>
-        text
-          .setPlaceholder("Enter a referer URL")
-          .setValue(this.plugin.settings.httpReferer)
-          .onChange(async (value) => {
-            this.plugin.settings.httpReferer = value;
-            await this.plugin.saveSettings();
-          })
-      );
+    if (this.plugin.settings.provider === "openrouter") {
+      new Setting(containerEl)
+        .setName("HTTP referer")
+        .setDesc("Optional OpenRouter app attribution; empty by default")
+        .addText((text) =>
+          text
+            .setPlaceholder("https://your-app.example")
+            .setValue(this.plugin.settings.httpReferer)
+            .onChange(async (value) => {
+              this.plugin.settings.httpReferer = value;
+              await this.plugin.saveSettings();
+            })
+        );
 
-    new Setting(containerEl)
-      .setName("App title")
-      .setDesc("Optional app attribution")
-      .addText((text) =>
-        text
-          .setPlaceholder("AI autocomplete")
-          .setValue(this.plugin.settings.appTitle)
-          .onChange(async (value) => {
-            this.plugin.settings.appTitle = value;
-            await this.plugin.saveSettings();
-          })
-      );
+      new Setting(containerEl)
+        .setName("App title")
+        .setDesc("Optional OpenRouter app attribution")
+        .addText((text) =>
+          text
+            .setPlaceholder("AI autocomplete")
+            .setValue(this.plugin.settings.appTitle)
+            .onChange(async (value) => {
+              this.plugin.settings.appTitle = value;
+              await this.plugin.saveSettings();
+            })
+        );
+    }
 
     new Setting(containerEl)
       .setName("Trigger delay (ms)")

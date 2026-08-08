@@ -294,12 +294,12 @@ Return only the text to insert at the cursor. Do not repeat text that already ap
       headers.Authorization = `Bearer ${options.apiKey.trim()}`;
     }
 
-    if (options.provider !== "lmstudio" && options.httpReferer?.trim()) {
-      headers["HTTP-Referer"] = options.httpReferer.trim();
-    }
-
-    if (options.provider !== "lmstudio" && options.appTitle?.trim()) {
-      headers["X-OpenRouter-Title"] = options.appTitle.trim();
+    const httpReferer = options.httpReferer?.trim();
+    if (options.provider !== "lmstudio" && httpReferer) {
+      headers["HTTP-Referer"] = httpReferer;
+      if (options.appTitle?.trim()) {
+        headers["X-OpenRouter-Title"] = options.appTitle.trim();
+      }
     }
 
     const reasoning = getReasoningPreferences(options);
