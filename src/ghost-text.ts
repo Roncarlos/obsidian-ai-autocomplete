@@ -16,6 +16,7 @@ import {
   EditorSelection,
   TransactionSpec,
 } from "@codemirror/state";
+import { PLUGIN_NAME } from "./constants";
 
 // --- State Management ---
 
@@ -72,7 +73,7 @@ class GhostTextWidget extends WidgetType {
 
   toDOM() {
     const span = document.createElement("span");
-    span.className = "ai-autocomplete-ghost-text";
+    span.className = "ai-note-completion-ghost-text";
     span.textContent = this.text;
     return span;
   }
@@ -208,7 +209,7 @@ export function createFetchPlugin(fetchFn: FetchFn, delay: number) {
             } catch (e) {
               // Silently ignore aborted requests
               if (e instanceof Error && e.name !== "AbortError") {
-                console.error("AI autocomplete: fetch error", e);
+                console.error(`${PLUGIN_NAME}: fetch error`, e);
               }
             }
           })();

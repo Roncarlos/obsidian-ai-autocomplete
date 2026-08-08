@@ -1,9 +1,9 @@
 {
-  "id": "ai-autocomplete",
-  "name": "AI Autocomplete",
-  "version": "1.0.5",
+  "id": "ai-note-completion",
+  "name": "AI Note Completion",
+  "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "Inline AI writing completion with ghost text. Tab to accept.",
-  "author": "liuyishou",
+  "author": "Roncarlos",
   "isDesktopOnly": false
 }

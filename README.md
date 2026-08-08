@@ -1,4 +1,4 @@
-# AI Autocomplete
+# AI Note Completion
 
 AI inline writing completion for Obsidian, powered by OpenAI-compatible APIs. The default setup routes through [OpenRouter](https://openrouter.ai).
 
@@ -17,7 +17,7 @@ Type naturally and get ghost text suggestions that appear inline. Press **Tab** 
 ## Usage
 
 1. Install the plugin
-2. Go to Settings → AI Autocomplete → enter your OpenRouter API key
+2. Go to Settings → AI Note Completion → enter your OpenRouter API key
 3. Start writing — suggestions appear after a brief pause
 
 | Key | Action |
@@ -48,6 +48,10 @@ Internal Obsidian links found in that context are resolved automatically. The pl
 Reference-handling rules remain in the system prompt, while linked-note excerpts are sent as user-level reference data. Each excerpt is labeled with its source, scope (`note`, `section`, or `block`), and truncation status so smaller models can apply it more reliably.
 
 When LM Studio is selected, the plugin loads language models from `/api/v1/models` at startup and provides a manual refresh action in settings. The selected model's reasoning capabilities and declared default are shown in the settings. A custom model identifier can always be entered manually.
+
+## Attribution
+
+This project is a continued version of [AI Autocomplete](https://github.com/Leoyishou/obsidian-ai-autocomplete), originally created by Leoyishou. The original MIT license and copyright notice are preserved.
 
 ## License
 

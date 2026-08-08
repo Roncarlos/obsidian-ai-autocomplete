@@ -1,11 +1,11 @@
-.ai-autocomplete-ghost-text {
+.ai-note-completion-ghost-text {
   opacity: 0.4;
   font-style: italic;
   pointer-events: none;
   color: var(--text-muted);
 }
 
-.ai-autocomplete-model-select {
+.ai-note-completion-model-select {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -13,7 +13,7 @@
   white-space: nowrap;
 }
 
-.ai-autocomplete-model-input {
+.ai-note-completion-model-input {
   width: min(28rem, 100%);
   max-width: 100%;
 }

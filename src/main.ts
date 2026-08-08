@@ -2,6 +2,7 @@ import { Plugin, PluginSettingTab, App, Setting, Notice } from "obsidian";
 import { Extension } from "@codemirror/state";
 import { inlineSuggestionExtension } from "./ghost-text";
 import { buildObsidianLinkContext } from "./obsidian-links";
+import { PLUGIN_NAME } from "./constants";
 import {
   AIProvider,
   CompletionError,
@@ -42,7 +43,7 @@ const DEFAULT_SETTINGS: AIAutocompleteSettings = {
   reasoningByModel: {},
   excludeReasoning: true,
   httpReferer: "",
-  appTitle: "AI Autocomplete",
+  appTitle: PLUGIN_NAME,
   delay: 800,
   enabled: true,
 };
@@ -178,7 +179,7 @@ export default class AIAutocompletePlugin extends Plugin {
               );
             } catch (error) {
               console.warn(
-                "AI autocomplete: unable to read internal links",
+                `${PLUGIN_NAME}: unable to read internal links`,
                 error
               );
             }
@@ -208,7 +209,7 @@ export default class AIAutocompletePlugin extends Plugin {
         this.settings.enabled = !this.settings.enabled;
         void this.saveSettings();
         new Notice(
-          `AI autocomplete: ${this.settings.enabled ? "on" : "off"}`
+          `${PLUGIN_NAME}: ${this.settings.enabled ? "on" : "off"}`
         );
       },
     });
@@ -405,7 +406,7 @@ export default class AIAutocompletePlugin extends Plugin {
       this.lmStudioModelsError = message;
       // Remember the failed URL so opening the settings tab does not retry in a loop.
       this.lmStudioModelsUrl = cacheKey;
-      if (showNotice) new Notice(`AI autocomplete: ${message}`);
+      if (showNotice) new Notice(`${PLUGIN_NAME}: ${message}`);
       return this.lmStudioModels;
     } finally {
       this.lmStudioModelsLoading = false;
@@ -474,7 +475,7 @@ export default class AIAutocompletePlugin extends Plugin {
 
   async testConnection() {
     if (this.settings.provider !== "lmstudio" && !this.settings.apiKey) {
-      new Notice("AI autocomplete: API key is empty");
+      new Notice(`${PLUGIN_NAME}: API key is empty`);
       return;
     }
 
@@ -487,8 +488,8 @@ export default class AIAutocompletePlugin extends Plugin {
       );
       new Notice(
         result
-          ? `AI autocomplete: connected\n\n${testPrefix}\n────────\n${result}`
-          : "AI autocomplete: connected\n\nNo suggestion returned"
+          ? `${PLUGIN_NAME}: connected\n\n${testPrefix}\n────────\n${result}`
+          : `${PLUGIN_NAME}: connected\n\nNo suggestion returned`
       );
     } catch (e) {
       this.showCompletionError(e, true);
@@ -496,7 +497,7 @@ export default class AIAutocompletePlugin extends Plugin {
   }
 
   showCompletionError(error: unknown, forceNotice = false) {
-    console.error("AI autocomplete: completion error", error);
+    console.error(`${PLUGIN_NAME}: completion error`, error);
 
     const now = Date.now();
     if (!forceNotice && now - this.lastErrorNoticeAt < 10000) return;
@@ -506,7 +507,7 @@ export default class AIAutocompletePlugin extends Plugin {
       error instanceof CompletionError || error instanceof Error
         ? error.message
         : "Unknown completion error";
-    new Notice(`AI autocomplete failed: ${message}`);
+    new Notice(`${PLUGIN_NAME} failed: ${message}`);
   }
 }
 
@@ -624,7 +625,7 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
           this.plugin.settings.systemPrompt = DEFAULT_SYSTEM_PROMPT;
           await this.plugin.saveSettings();
           this.display();
-          new Notice("AI autocomplete: prompt reset");
+          new Notice(`${PLUGIN_NAME}: prompt reset`);
         })
       );
 
@@ -647,7 +648,7 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
         .setDesc("Optional OpenRouter app attribution")
         .addText((text) =>
           text
-            .setPlaceholder("AI autocomplete")
+            .setPlaceholder(PLUGIN_NAME)
             .setValue(this.plugin.settings.appTitle)
             .onChange(async (value) => {
               this.plugin.settings.appTitle = value;
@@ -715,7 +716,7 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
             : "Choose a model provided by LM Studio"
         )
         .addDropdown((dropdown) => {
-          dropdown.selectEl.classList.add("ai-autocomplete-model-select");
+          dropdown.selectEl.classList.add("ai-note-completion-model-select");
           dropdown.selectEl.title = currentModel;
 
           if (modelOptions.length === 0) {
@@ -742,7 +743,7 @@ class AIAutocompleteSettingTab extends PluginSettingTab {
           : "Model identifier sent to the API"
       )
       .addText((text) => {
-        text.inputEl.classList.add("ai-autocomplete-model-input");
+        text.inputEl.classList.add("ai-note-completion-model-input");
         return text
           .setPlaceholder("Enter a model identifier")
           .setValue(currentModel)
